@@ -1,7 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./index.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+type Post = {
+  titulo: string;
+  descricao: string;
+  imagemUrl: string;
+  dataPublicacao: string;
+  tipoPost: string;
+};
 
 type Errors = {
   titulo?: string;
@@ -23,11 +31,7 @@ const FormField: React.FC<{
       <label htmlFor={htmlFor} className={required ? "required" : ""}>
         {label}
       </label>
-      {error && (
-        <span className="error-badge" role="alert" aria-live="polite">
-          {error}
-        </span>
-      )}
+      {error && <span className="error-badge">{error}</span>}
     </div>
     {children}
   </div>
@@ -41,6 +45,18 @@ function App() {
   const [tipoPost, setTipoPost] = useState("");
   const [postsCount, setPostsCount] = useState(0);
   const [errors, setErrors] = useState<Errors>({});
+
+  useEffect(() => {
+    const stored = localStorage.getItem("posts");
+    if (stored) {
+      try {
+        const parsed: Post[] = JSON.parse(stored);
+        setPostsCount(parsed.length);
+      } catch {
+        console.error("Erro ao ler posts do localStorage");
+      }
+    }
+  }, []);
 
   const isFutureOrToday = (value: string) => {
     if (!value) return false;
@@ -72,11 +88,37 @@ function App() {
       toast.error(Object.values(e)[0]!);
       return;
     }
+
+    const newPost: Post = {
+      titulo,
+      descricao,
+      imagemUrl,
+      dataPublicacao,
+      tipoPost,
+    };
+
+    // 🔹 Salvar no localStorage
+    const stored = localStorage.getItem("posts");
+    let posts: Post[] = [];
+    if (stored) {
+      try {
+        posts = JSON.parse(stored);
+      } catch {
+        posts = [];
+      }
+    }
+    posts.push(newPost);
+    localStorage.setItem("posts", JSON.stringify(posts));
+
+    setPostsCount(posts.length);
     toast.success("Post criado com sucesso!");
-    console.log({ titulo, descricao, imagemUrl, dataPublicacao, tipoPost });
-    setTitulo(""); setDescricao(""); setImagemUrl(""); setDataPublicacao(""); setTipoPost("");
+
+    setTitulo("");
+    setDescricao("");
+    setImagemUrl("");
+    setDataPublicacao("");
+    setTipoPost("");
     setErrors({});
-    setPostsCount((c) => c + 1);
   };
 
   const blurValidate = (field: keyof Errors) => {
@@ -90,7 +132,9 @@ function App() {
       <div className="container">
         <header className="header">
           <h1>Painel de Gerenciamento</h1>
-          <span className="stat"><strong>{postsCount}</strong> posts</span>
+          <span className="stat">
+            <strong>{postsCount}</strong> posts
+          </span>
         </header>
 
         <form className="form" onSubmit={handleSubmit} noValidate>
@@ -110,7 +154,6 @@ function App() {
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
               onBlur={() => blurValidate("titulo")}
-              aria-invalid={!!errors.titulo}
             />
           </FormField>
 
@@ -127,7 +170,6 @@ function App() {
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
               onBlur={() => blurValidate("descricao")}
-              aria-invalid={!!errors.descricao}
             />
           </FormField>
 
@@ -145,7 +187,6 @@ function App() {
               value={imagemUrl}
               onChange={(e) => setImagemUrl(e.target.value)}
               onBlur={() => blurValidate("imagemUrl")}
-              aria-invalid={!!errors.imagemUrl}
             />
           </FormField>
 
@@ -162,7 +203,6 @@ function App() {
               value={dataPublicacao}
               onChange={(e) => setDataPublicacao(e.target.value)}
               onBlur={() => blurValidate("dataPublicacao")}
-              aria-invalid={!!errors.dataPublicacao}
             />
           </FormField>
 
@@ -179,7 +219,6 @@ function App() {
                 value={tipoPost}
                 onChange={(e) => setTipoPost(e.target.value)}
                 onBlur={() => blurValidate("tipoPost")}
-                aria-invalid={!!errors.tipoPost}
               >
                 <option value="">Selecione...</option>
                 <option value="Artigo">Artigo</option>
@@ -190,7 +229,9 @@ function App() {
             </FormField>
 
             <div className="field align-end">
-              <button type="submit" className="btn btn-primary small">Salvar</button>
+              <button type="submit" className="btn btn-primary small">
+                Salvar
+              </button>
             </div>
           </div>
         </form>
