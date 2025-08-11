@@ -6,6 +6,7 @@ function App() {
   const [descricao, setDescricao] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
   const [dataPublicacao, setDataPublicacao] = useState("");
+  const [tipoPost, setTipoPost] = useState("");
   const [postsCount, setPostsCount] = useState(0);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -14,19 +15,13 @@ function App() {
       alert("Preencha título e descrição.");
       return;
     }
-
-    console.log({
-      titulo,
-      descricao,
-      imagemUrl,
-      dataPublicacao,
-    });
-
+    console.log({ titulo, descricao, imagemUrl, dataPublicacao, tipoPost });
     alert("Post criado com sucesso!");
     setTitulo("");
     setDescricao("");
     setImagemUrl("");
     setDataPublicacao("");
+    setTipoPost("");
     setPostsCount((c) => c + 1);
   };
 
@@ -47,6 +42,7 @@ function App() {
         <label htmlFor="titulo">Título</label>
         <input
           id="titulo"
+          className="input"
           type="text"
           placeholder="Digite o título do post"
           value={titulo}
@@ -56,6 +52,7 @@ function App() {
         <label htmlFor="descricao">Descrição</label>
         <textarea
           id="descricao"
+          className="input"
           placeholder="Escreva a descrição do post"
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
@@ -64,6 +61,7 @@ function App() {
         <label htmlFor="imagemUrl">URL da imagem de capa</label>
         <input
           id="imagemUrl"
+          className="input"
           type="url"
           placeholder="URL da imagem de capa"
           value={imagemUrl}
@@ -73,12 +71,36 @@ function App() {
         <label htmlFor="dataPublicacao">Data de publicação</label>
         <input
           id="dataPublicacao"
+          className="input"
           type="date"
           value={dataPublicacao}
           onChange={(e) => setDataPublicacao(e.target.value)}
         />
 
-        <button type="submit">Salvar</button>
+        {/* Select e botão lado a lado */}
+        <div className="row">
+          <div className="field">
+            <label htmlFor="tipoPost">Tipo do post</label>
+            <select
+              id="tipoPost"
+              className="input select"
+              value={tipoPost}
+              onChange={(e) => setTipoPost(e.target.value)}
+            >
+              <option value="">Selecione...</option>
+              <option value="Artigo">Artigo</option>
+              <option value="Notícia">Notícia</option>
+              <option value="Tutorial">Tutorial</option>
+              <option value="Entrevista">Entrevista</option>
+            </select>
+          </div>
+
+          <div className="field align-end">
+            <button type="submit" className="btn btn-primary small">
+              Salvar
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   );
