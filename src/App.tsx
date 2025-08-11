@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import "./index.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -7,57 +7,73 @@ type Post = {
   titulo: string;
   descricao: string;
   imagemUrl: string;
-  dataPublicacao: string;
+  dataPublicacao: string; 
   tipoPost: string;
 };
 
-type Errors = {
-  titulo?: string;
-  descricao?: string;
-  imagemUrl?: string;
-  dataPublicacao?: string;
-  tipoPost?: string;
-};
+type Errors = Partial<Record<keyof Post, string>>;
+
+const STORAGE_KEY = "posts";
 
 const FormField: React.FC<{
   label: string;
   htmlFor: string;
-  error?: string;
   required?: boolean;
+  error?: string;
   children: React.ReactNode;
-}> = ({ label, htmlFor, error, required, children }) => (
+}> = ({ label, htmlFor, required, error, children }) => (
   <div className="field">
     <div className="label-row">
       <label htmlFor={htmlFor} className={required ? "required" : ""}>
         {label}
       </label>
-      {error && <span className="error-badge">{error}</span>}
+      {error && (
+        <span className="error-badge" role="alert" aria-live="polite">
+          {error}
+        </span>
+      )}
     </div>
     {children}
   </div>
 );
 
-function App() {
+export default function App() {
+
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
   const [dataPublicacao, setDataPublicacao] = useState("");
   const [tipoPost, setTipoPost] = useState("");
-  const [postsCount, setPostsCount] = useState(0);
+
   const [errors, setErrors] = useState<Errors>({});
+  const [postsCount, setPostsCount] = useState(0);
 
   useEffect(() => {
-    const stored = localStorage.getItem("posts");
-    if (stored) {
-      try {
-        const parsed: Post[] = JSON.parse(stored);
-        setPostsCount(parsed.length);
-      } catch {
-        console.error("Erro ao ler posts do localStorage");
-      }
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const arr: Post[] = stored ? JSON.parse(stored) : [];
+      setPostsCount(Array.isArray(arr) ? arr.length : 0);
+    } catch {
+      setPostsCount(0);
     }
   }, []);
 
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        try {
+          const arr: Post[] = e.newValue ? JSON.parse(e.newValue) : [];
+          setPostsCount(Array.isArray(arr) ? arr.length : 0);
+        } catch {
+          setPostsCount(0);
+        }
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  // helpers
   const isFutureOrToday = (value: string) => {
     if (!value) return false;
     const picked = new Date(value + "T00:00:00");
@@ -66,7 +82,7 @@ function App() {
     return picked >= today;
   };
 
-  const validate = () => {
+  const validate = (): Errors => {
     const e: Errors = {};
     if (!titulo.trim()) e.titulo = "Informe um título.";
     if (!descricao.trim()) e.descricao = "Informe a descrição.";
@@ -81,11 +97,25 @@ function App() {
     return e;
   };
 
+  const blurValidate = (field: keyof Post) => {
+    const e = validate();
+    setErrors((prev) => ({ ...prev, [field]: e[field] }));
+  };
+
+  const resetForm = () => {
+    setTitulo("");
+    setDescricao("");
+    setImagemUrl("");
+    setDataPublicacao("");
+    setTipoPost("");
+    setErrors({});
+  };
+
   const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
     const e = validate();
     if (Object.keys(e).length) {
-      toast.error(Object.values(e)[0]!);
+      toast.error(Object.values(e)[0] ?? "Corrija os campos obrigatórios.");
       return;
     }
 
@@ -97,43 +127,32 @@ function App() {
       tipoPost,
     };
 
-    // 🔹 Salvar no localStorage
-    const stored = localStorage.getItem("posts");
+    // read -> push -> write (JSON.parse / JSON.stringify)
     let posts: Post[] = [];
-    if (stored) {
-      try {
-        posts = JSON.parse(stored);
-      } catch {
-        posts = [];
-      }
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      posts = stored ? JSON.parse(stored) : [];
+      if (!Array.isArray(posts)) posts = [];
+    } catch {
+      posts = [];
     }
     posts.push(newPost);
-    localStorage.setItem("posts", JSON.stringify(posts));
-
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
     setPostsCount(posts.length);
+
     toast.success("Post criado com sucesso!");
-
-    setTitulo("");
-    setDescricao("");
-    setImagemUrl("");
-    setDataPublicacao("");
-    setTipoPost("");
-    setErrors({});
-  };
-
-  const blurValidate = (field: keyof Errors) => {
-    const e = validate();
-    setErrors((prev) => ({ ...prev, [field]: e[field] }));
+    resetForm();
   };
 
   return (
     <>
       <ToastContainer position="top-right" autoClose={2500} />
+
       <div className="container">
         <header className="header">
           <h1>Painel de Gerenciamento</h1>
           <span className="stat">
-            <strong>{postsCount}</strong> posts
+            Total de posts: <strong>{postsCount}</strong>
           </span>
         </header>
 
@@ -154,6 +173,7 @@ function App() {
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
               onBlur={() => blurValidate("titulo")}
+              aria-invalid={!!errors.titulo}
             />
           </FormField>
 
@@ -170,6 +190,7 @@ function App() {
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
               onBlur={() => blurValidate("descricao")}
+              aria-invalid={!!errors.descricao}
             />
           </FormField>
 
@@ -187,6 +208,7 @@ function App() {
               value={imagemUrl}
               onChange={(e) => setImagemUrl(e.target.value)}
               onBlur={() => blurValidate("imagemUrl")}
+              aria-invalid={!!errors.imagemUrl}
             />
           </FormField>
 
@@ -203,6 +225,7 @@ function App() {
               value={dataPublicacao}
               onChange={(e) => setDataPublicacao(e.target.value)}
               onBlur={() => blurValidate("dataPublicacao")}
+              aria-invalid={!!errors.dataPublicacao}
             />
           </FormField>
 
@@ -219,6 +242,7 @@ function App() {
                 value={tipoPost}
                 onChange={(e) => setTipoPost(e.target.value)}
                 onBlur={() => blurValidate("tipoPost")}
+                aria-invalid={!!errors.tipoPost}
               >
                 <option value="">Selecione...</option>
                 <option value="Artigo">Artigo</option>
@@ -239,5 +263,3 @@ function App() {
     </>
   );
 }
-
-export default App;
