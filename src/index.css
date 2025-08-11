@@ -20,7 +20,6 @@ body {
   color: var(--text);
   margin: 0;
 
-  /* Centralização do painel */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -29,7 +28,6 @@ body {
   padding: 24px;
 }
 
-/* Painel central maior */
 .container {
   background: var(--card);
   width: min(900px, 92vw);
@@ -38,7 +36,6 @@ body {
   box-shadow: 0 10px 30px rgba(2, 8, 20, 0.08);
 }
 
-/* Cabeçalho e contador */
 .header {
   display: flex;
   align-items: center;
@@ -64,7 +61,6 @@ body {
   font-size: 14px;
 }
 
-/* Formulário maior e mais espaçado */
 .form {
   background: #fbfdff;
   padding: 24px;
