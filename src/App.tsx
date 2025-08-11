@@ -4,7 +4,8 @@ import "./index.css";
 function App() {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [imagemUrl, setImagemUrl] = useState(""); // 👈 novo estado
+  const [imagemUrl, setImagemUrl] = useState("");
+  const [dataPublicacao, setDataPublicacao] = useState("");
   const [postsCount, setPostsCount] = useState(0);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -18,12 +19,14 @@ function App() {
       titulo,
       descricao,
       imagemUrl,
+      dataPublicacao,
     });
 
     alert("Post criado com sucesso!");
     setTitulo("");
     setDescricao("");
     setImagemUrl("");
+    setDataPublicacao("");
     setPostsCount((c) => c + 1);
   };
 
@@ -65,6 +68,14 @@ function App() {
           placeholder="URL da imagem de capa"
           value={imagemUrl}
           onChange={(e) => setImagemUrl(e.target.value)}
+        />
+
+        <label htmlFor="dataPublicacao">Data de publicação</label>
+        <input
+          id="dataPublicacao"
+          type="date"
+          value={dataPublicacao}
+          onChange={(e) => setDataPublicacao(e.target.value)}
         />
 
         <button type="submit">Salvar</button>
