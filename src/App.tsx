@@ -6,16 +6,15 @@ import "./index.css";
 type Post = {
   titulo: string;
   descricao: string;
-  imagemUrl: string;      // deve começar com http(s)
-  dataPublicacao: string; // yyyy-mm-dd
-  tipoPost: string;       // Artigo|Notícia|Tutorial|Entrevista
+  imagemUrl: string;
+  dataPublicacao: string;
+  tipoPost: string;
 };
 
 type Errors = Partial<Record<keyof Post, string>>;
 
 const STORAGE_KEY = "posts";
 
-/* Label + erro (à direita) + children (campo) */
 const FormField: React.FC<{
   label: string;
   htmlFor: string;
@@ -98,7 +97,6 @@ export default function App() {
 
     const newPost: Post = { titulo, descricao, imagemUrl, dataPublicacao, tipoPost };
 
-    // read -> push -> write (JSON.parse / JSON.stringify)
     let posts: Post[] = [];
     try {
       const raw = localStorage.getItem(STORAGE_KEY);

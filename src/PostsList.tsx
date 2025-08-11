@@ -5,7 +5,7 @@ type SavedPost = {
   titulo: string;
   descricao: string;
   imagemUrl: string;
-  dataPublicacao: string; // yyyy-mm-dd
+  dataPublicacao: string;
   tipoPost: string;
 };
 
@@ -32,16 +32,14 @@ export default function PostsList() {
 
   const refresh = () => {
     const data = readPosts();
-    // mais recentes primeiro (opcional)
     data.sort((a, b) => (a.dataPublicacao < b.dataPublicacao ? 1 : -1));
     setPosts(data);
   };
 
   useEffect(() => {
-    refresh(); // ao montar
+    refresh();
   }, []);
 
-  // atualiza entre abas
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) refresh();
@@ -50,7 +48,6 @@ export default function PostsList() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  // atualiza na MESMA aba quando App dispara "posts-updated"
   useEffect(() => {
     const onUpdated = () => refresh();
     window.addEventListener("posts-updated", onUpdated);
@@ -61,7 +58,6 @@ export default function PostsList() {
     const updated = posts.filter((_, i) => i !== idx);
     setPosts(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    // mantém sincronizado na mesma aba
     window.dispatchEvent(new Event("posts-updated"));
   };
 
