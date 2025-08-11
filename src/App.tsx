@@ -1,60 +1,31 @@
-import React, { useEffect, useState } from "react";
-import "./index.css";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { useEffect, useState } from "react";
+
+const STORAGE_KEY = "posts";
 
 type Post = {
   titulo: string;
   descricao: string;
   imagemUrl: string;
-  dataPublicacao: string; 
+  dataPublicacao: string; // yyyy-mm-dd
   tipoPost: string;
 };
 
-type Errors = Partial<Record<keyof Post, string>>;
+function formatDate(isoDate?: string) {
+  if (!isoDate) return "";
+  const [y, m, d] = isoDate.split("-");
+  return `${d}/${m}/${y}`;
+}
 
-const STORAGE_KEY = "posts";
-
-const FormField: React.FC<{
-  label: string;
-  htmlFor: string;
-  required?: boolean;
-  error?: string;
-  children: React.ReactNode;
-}> = ({ label, htmlFor, required, error, children }) => (
-  <div className="field">
-    <div className="label-row">
-      <label htmlFor={htmlFor} className={required ? "required" : ""}>
-        {label}
-      </label>
-      {error && (
-        <span className="error-badge" role="alert" aria-live="polite">
-          {error}
-        </span>
-      )}
-    </div>
-    {children}
-  </div>
-);
-
-export default function App() {
-
-  const [titulo, setTitulo] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [imagemUrl, setImagemUrl] = useState("");
-  const [dataPublicacao, setDataPublicacao] = useState("");
-  const [tipoPost, setTipoPost] = useState("");
-
-  const [errors, setErrors] = useState<Errors>({});
-  const [postsCount, setPostsCount] = useState(0);
+export default function PostsList() {
+  const [posts, setPosts] = useState<Post[]>([]);
 
   useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      const arr: Post[] = stored ? JSON.parse(stored) : [];
-      setPostsCount(Array.isArray(arr) ? arr.length : 0);
+      const parsed = stored ? (JSON.parse(stored) as unknown) : [];
+      setPosts(Array.isArray(parsed) ? (parsed as Post[]) : []);
     } catch {
-      setPostsCount(0);
+      setPosts([]);
     }
   }, []);
 
@@ -62,10 +33,10 @@ export default function App() {
     const onStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) {
         try {
-          const arr: Post[] = e.newValue ? JSON.parse(e.newValue) : [];
-          setPostsCount(Array.isArray(arr) ? arr.length : 0);
+          const parsed = e.newValue ? (JSON.parse(e.newValue) as unknown) : [];
+          setPosts(Array.isArray(parsed) ? (parsed as Post[]) : []);
         } catch {
-          setPostsCount(0);
+          setPosts([]);
         }
       }
     };
@@ -73,193 +44,49 @@ export default function App() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  // helpers
-  const isFutureOrToday = (value: string) => {
-    if (!value) return false;
-    const picked = new Date(value + "T00:00:00");
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return picked >= today;
+  const handleDelete = (idx: number) => {
+    const updated = posts.filter((_, i) => i !== idx);
+    setPosts(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
 
-  const validate = (): Errors => {
-    const e: Errors = {};
-    if (!titulo.trim()) e.titulo = "Informe um título.";
-    if (!descricao.trim()) e.descricao = "Informe a descrição.";
-    if (!imagemUrl.trim()) e.imagemUrl = "Informe a URL de capa.";
-    else if (!/^https?:\/\//i.test(imagemUrl.trim()))
-      e.imagemUrl = "A URL deve começar com http(s).";
-    if (!dataPublicacao) e.dataPublicacao = "Selecione a data.";
-    else if (!isFutureOrToday(dataPublicacao))
-      e.dataPublicacao = "Use hoje ou uma data futura.";
-    if (!tipoPost) e.tipoPost = "Selecione uma categoria.";
-    setErrors(e);
-    return e;
-  };
-
-  const blurValidate = (field: keyof Post) => {
-    const e = validate();
-    setErrors((prev) => ({ ...prev, [field]: e[field] }));
-  };
-
-  const resetForm = () => {
-    setTitulo("");
-    setDescricao("");
-    setImagemUrl("");
-    setDataPublicacao("");
-    setTipoPost("");
-    setErrors({});
-  };
-
-  const handleSubmit = (ev: React.FormEvent) => {
-    ev.preventDefault();
-    const e = validate();
-    if (Object.keys(e).length) {
-      toast.error(Object.values(e)[0] ?? "Corrija os campos obrigatórios.");
-      return;
-    }
-
-    const newPost: Post = {
-      titulo,
-      descricao,
-      imagemUrl,
-      dataPublicacao,
-      tipoPost,
-    };
-
-    // read -> push -> write (JSON.parse / JSON.stringify)
-    let posts: Post[] = [];
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      posts = stored ? JSON.parse(stored) : [];
-      if (!Array.isArray(posts)) posts = [];
-    } catch {
-      posts = [];
-    }
-    posts.push(newPost);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
-    setPostsCount(posts.length);
-
-    toast.success("Post criado com sucesso!");
-    resetForm();
-  };
+  if (!posts.length) {
+    return (
+      <div style={{ padding: 24, textAlign: "center", color: "#64748b" }}>
+        Nenhum post encontrado.
+      </div>
+    );
+  }
 
   return (
-    <>
-      <ToastContainer position="top-right" autoClose={2500} />
-
-      <div className="container">
-        <header className="header">
-          <h1>Painel de Gerenciamento</h1>
-          <span className="stat">
-            Total de posts: <strong>{postsCount}</strong>
-          </span>
-        </header>
-
-        <form className="form" onSubmit={handleSubmit} noValidate>
-          <h3>Novo Post</h3>
-
-          <FormField
-            label="Título"
-            htmlFor="titulo"
-            required
-            error={errors.titulo}
-          >
-            <input
-              id="titulo"
-              className={`input ${errors.titulo ? "error" : ""}`}
-              type="text"
-              placeholder="Digite o título do post"
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              onBlur={() => blurValidate("titulo")}
-              aria-invalid={!!errors.titulo}
+    <div className="posts-wrap">
+      {posts.map((p, idx) => (
+        <article key={`${p.titulo}-${idx}`} className="post-card">
+          <div className="thumb">
+            <img
+              src={
+                p.imagemUrl || "https://via.placeholder.com/320x180?text=Sem+imagem"
+              }
+              alt={p.titulo}
             />
-          </FormField>
-
-          <FormField
-            label="Descrição"
-            htmlFor="descricao"
-            required
-            error={errors.descricao}
-          >
-            <textarea
-              id="descricao"
-              className={`input ${errors.descricao ? "error" : ""}`}
-              placeholder="Escreva a descrição do post"
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              onBlur={() => blurValidate("descricao")}
-              aria-invalid={!!errors.descricao}
-            />
-          </FormField>
-
-          <FormField
-            label="URL da imagem de capa"
-            htmlFor="imagemUrl"
-            required
-            error={errors.imagemUrl}
-          >
-            <input
-              id="imagemUrl"
-              className={`input ${errors.imagemUrl ? "error" : ""}`}
-              type="url"
-              placeholder="https://…"
-              value={imagemUrl}
-              onChange={(e) => setImagemUrl(e.target.value)}
-              onBlur={() => blurValidate("imagemUrl")}
-              aria-invalid={!!errors.imagemUrl}
-            />
-          </FormField>
-
-          <FormField
-            label="Data de publicação"
-            htmlFor="dataPublicacao"
-            required
-            error={errors.dataPublicacao}
-          >
-            <input
-              id="dataPublicacao"
-              className={`input ${errors.dataPublicacao ? "error" : ""}`}
-              type="date"
-              value={dataPublicacao}
-              onChange={(e) => setDataPublicacao(e.target.value)}
-              onBlur={() => blurValidate("dataPublicacao")}
-              aria-invalid={!!errors.dataPublicacao}
-            />
-          </FormField>
-
-          <div className="row">
-            <FormField
-              label="Tipo do post"
-              htmlFor="tipoPost"
-              required
-              error={errors.tipoPost}
-            >
-              <select
-                id="tipoPost"
-                className={`input select ${errors.tipoPost ? "error" : ""}`}
-                value={tipoPost}
-                onChange={(e) => setTipoPost(e.target.value)}
-                onBlur={() => blurValidate("tipoPost")}
-                aria-invalid={!!errors.tipoPost}
-              >
-                <option value="">Selecione...</option>
-                <option value="Artigo">Artigo</option>
-                <option value="Notícia">Notícia</option>
-                <option value="Tutorial">Tutorial</option>
-                <option value="Entrevista">Entrevista</option>
-              </select>
-            </FormField>
-
-            <div className="field align-end">
-              <button type="submit" className="btn btn-primary small">
-                Salvar
-              </button>
-            </div>
           </div>
-        </form>
-      </div>
-    </>
+
+          <div className="content">
+            <span className="badge">{p.tipoPost?.toUpperCase()}</span>
+            <h3 className="title">{p.titulo}</h3>
+            {p.descricao && <p className="excerpt">{p.descricao}</p>}
+            <div className="meta">Publicado em: <time>{formatDate(p.dataPublicacao)}</time></div>
+
+            <button
+              className="link-delete"
+              onClick={() => handleDelete(idx)}
+              aria-label={`Excluir ${p.titulo}`}
+            >
+              Excluir
+            </button>
+          </div>
+        </article>
+      ))}
+    </div>
   );
 }
