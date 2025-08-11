@@ -4,7 +4,8 @@ import "./index.css";
 function App() {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [postsCount, setPostsCount] = useState(0); // começa em 0
+  const [imagemUrl, setImagemUrl] = useState(""); // 👈 novo estado
+  const [postsCount, setPostsCount] = useState(0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -13,12 +14,16 @@ function App() {
       return;
     }
 
-    console.log("Título:", titulo);
-    console.log("Descrição:", descricao);
+    console.log({
+      titulo,
+      descricao,
+      imagemUrl,
+    });
 
     alert("Post criado com sucesso!");
     setTitulo("");
     setDescricao("");
+    setImagemUrl("");
     setPostsCount((c) => c + 1);
   };
 
@@ -51,6 +56,15 @@ function App() {
           placeholder="Escreva a descrição do post"
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
+        />
+
+        <label htmlFor="imagemUrl">URL da imagem de capa</label>
+        <input
+          id="imagemUrl"
+          type="url"
+          placeholder="URL da imagem de capa"
+          value={imagemUrl}
+          onChange={(e) => setImagemUrl(e.target.value)}
         />
 
         <button type="submit">Salvar</button>
